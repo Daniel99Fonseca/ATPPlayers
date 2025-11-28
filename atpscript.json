@@ -1,4 +1,62 @@
-cavalo
-salve alr beleza
-sabichao
-tratratra
+use("atp");
+db.createCollection("Mongo-Clean-Cleaned")
+
+db["atp"].aggregate([
+  {
+    $group: {
+      _id: {
+        PlayerName: "$PlayerName",
+        Tournament: "$Tournament",
+        Date: "$Date",
+        Oponent: "$Oponent"
+      },
+      doc: { $first: "$$ROOT" }  // mantém o primeiro documento
+    }
+  },
+  { $replaceRoot: { newRoot: "$doc" } },
+  { $out: "Mongo-Clean-NoDups" } // escreve em coleção temporária
+])
+
+db["Mongo-Clean-NoDups"].updateMany(
+  {},
+  [
+    {
+      $set: {
+        Date: {
+          $dateFromString: {
+            dateString: {
+              $substrCP: ["$Date", 0, 10]  // extrai só "YYYY.MM.DD"
+            },
+            format: "%Y.%m.%d"
+          }
+        }
+      }
+    }
+  ]
+)
+
+db["Mongo-Clean-NoDups"].updateMany(
+  {},
+  [
+    {
+      $set: {
+        Prize: {
+          $toInt: {
+            $replaceAll: {
+              input: {
+                $substrCP: ["$Prize", 1, { $strLenCP: "$Prize" }]
+              },
+              find: {$literal: ","},
+              replacement: ""
+            }
+          }
+        }
+      }
+    }
+  ]
+)
+
+db["Mongo-Clean-NoDups"].aggregate([
+  { $match: {} },
+  { $out: "Mongo-Clean-Cleaned" }
+])
