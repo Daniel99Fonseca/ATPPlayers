@@ -10,11 +10,11 @@ db["atpplayers"].aggregate([
         Date: "$Date",
         Oponent: "$Oponent"
       },
-      doc: { $first: "$$ROOT" }  // mantém o primeiro documento
+      doc: { $first: "$$ROOT" } 
     }
   },
   { $replaceRoot: { newRoot: "$doc" } },
-  { $out: "Mongo-Clean-NoDups" } // escreve em coleção temporária
+  { $out: "Mongo-Clean-NoDups" } 
 ])
 
 db["Mongo-Clean-NoDups"].updateMany(
@@ -25,7 +25,7 @@ db["Mongo-Clean-NoDups"].updateMany(
         Date: {
           $dateFromString: {
             dateString: {
-              $substrCP: ["$Date", 0, 10]  // extrai só "YYYY.MM.DD"
+              $substrCP: ["$Date", 0, 10] 
             },
             format: "%Y.%m.%d"
           }
@@ -42,12 +42,18 @@ db["Mongo-Clean-NoDups"].updateMany(
       $set: {
         Prize: {
           $cond: [
-            { $or: [ { $eq: ["$Prize", ""] }, { $eq: ["$Prize", null] } ] }, // se vazio ou null
-            0, // retorna 0
+            { $or: [ { $eq: ["$Prize", ""] }, { $eq: ["$Prize", null] } ] },
+            0,
             {
               $toInt: {
                 $replaceAll: {
-                  input: { $substrCP: ["$Prize", 1, { $strLenCP: "$Prize" }] }, // remove símbolo de $
+                  input: {
+                    $trim: {
+                      input: {
+                        $substrCP: ["$Prize", 1, { $subtract: [{ $strLenCP: "$Prize" }, 1] }]
+                      }
+                    }
+                  },
                   find: ",",
                   replacement: ""
                 }
