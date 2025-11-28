@@ -1,7 +1,7 @@
 use("atp");
 db.createCollection("Mongo-Clean-Cleaned")
 
-db["atp"].aggregate([
+db["atpplayers"].aggregate([
   {
     $group: {
       _id: {
@@ -41,15 +41,19 @@ db["Mongo-Clean-NoDups"].updateMany(
     {
       $set: {
         Prize: {
-          $toInt: {
-            $replaceAll: {
-              input: {
-                $substrCP: ["$Prize", 1, { $strLenCP: "$Prize" }]
-              },
-              find: {$literal: ","},
-              replacement: ""
+          $cond: [
+            { $or: [ { $eq: ["$Prize", ""] }, { $eq: ["$Prize", null] } ] }, // se vazio ou null
+            0, // retorna 0
+            {
+              $toInt: {
+                $replaceAll: {
+                  input: { $substrCP: ["$Prize", 1, { $strLenCP: "$Prize" }] }, // remove símbolo de $
+                  find: ",",
+                  replacement: ""
+                }
+              }
             }
-          }
+          ]
         }
       }
     }
